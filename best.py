@@ -194,27 +194,25 @@ class Attacker:
 
                         if final_pred.item() != target.item():
                             break
-            for test_model in self.test_models:
-                test_model.to(DEVICE)
-                test_model.eval()
-                output = test_model(perturbed_data)
-                final_pred = output.max(1, keepdim=True)[1]
-                if final_pred.item() != target.item():
-                    success += 1
-                else:
-                    fail += 1
-                test_model.cpu()
+            # for test_model in self.test_models:
+                # test_model.to(DEVICE)
+                # test_model.eval()
+                # output = test_model(perturbed_data)
+                # final_pred = output.max(1, keepdim=True)[1]
+                # if final_pred.item() != target.item():
+                    # success += 1
+                # else:
+                    # fail += 1
+                # test_model.cpu()
             wrong = 0
             # 將圖片存入
             adv_ex = perturbed_data * torch.tensor(self.std, device=DEVICE).view(3, 1, 1) + torch.tensor(self.mean, device=DEVICE).view(3, 1, 1)
             adv_ex = adv_ex.squeeze().detach().cpu().numpy()
-            data_raw = data_raw * torch.tensor(self.std, device=DEVICE).view(3, 1, 1) + torch.tensor(self.mean, device=DEVICE).view(3, 1, 1)
-            data_raw = data_raw.squeeze().detach().cpu().numpy()
-            adv_results.append( (init_pred.item(), final_pred.item(), data_raw, adv_ex) )
-        final_acc = (fail / (wrong + success + fail))
+            adv_results.append(adv_ex)
+        # final_acc = (fail / (wrong + success + fail))
         
-        print("Epsilon: {}\tTest Accuracy = {} / {} = {}".format(epsilon, fail, wrong + success + fail, final_acc))
-        return adv_results, final_acc
+        # print("Epsilon: {}\tTest Accuracy = {} / {} = {}".format(epsilon, fail, wrong + success + fail, final_acc))
+        return adv_results
 
 
 # In[5]:
@@ -247,15 +245,15 @@ results = []
 
 # 進行攻擊 並存起正確率和攻擊成功的圖片
 for eps in epsilons:
-    res, acc = attacker.attack(eps)
-    accuracies.append(acc)
-    examples.append(res[:5])
+    res = attacker.attack(eps)
+    # accuracies.append(acc)
+    # examples.append(res[:5])
     results.append(res)
-    L_inf = 0
-    for img in res:
-        L_inf += abs(img[2] - img[3]).max() * 255
-    L_inf /= 200
-    print(f'L-inf = {L_inf}\n')
+    # L_inf = 0
+    # for img in res:
+        # L_inf += abs(img[2] - img[3]).max() * 255
+    # L_inf /= 200
+    # print(f'L-inf = {L_inf}\n')
 
 
 # In[6]:
@@ -264,16 +262,17 @@ for eps in epsilons:
 # get_ipython().run_line_magic('matplotlib', 'inline')
 # 顯示圖片
 cnt = 0
-plt.figure(figsize=(30, 30))
+# plt.figure(figsize=(30, 30))
 for i in range(len(epsilons)):
     try:
-        p = sys.argv[1]
+        p = sys.argv[2]
         if p != '':
             os.makedirs(p, exist_ok=True)
     except:
         p = 'results'
+    print(p)
     for j, img in enumerate(results[i]):
-        img = img[3] * 255
+        img = img * 255
         img = np.clip(img, 0, 255)
         img = img.astype('uint8')
         img = np.transpose(img, (1, 2, 0))

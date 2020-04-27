@@ -13,6 +13,7 @@
 # In[2]:
 
 
+import sys
 import os
 # 讀取 label.csv
 import pandas as pd
@@ -130,26 +131,21 @@ class Attacker:
                 perturbed_data = self.fgsm_attack(data, epsilon, data_grad)
 
                 # 再將加入 noise 的圖片丟入 model 進行測試 得出相對應的 class        
-                output = self.model(perturbed_data)
-                final_pred = output.max(1, keepdim=True)[1]
+                # output = self.model(perturbed_data)
+                # final_pred = output.max(1, keepdim=True)[1]
 
-                if final_pred.item() == target.item():
-                    # 辨識結果還是正確 攻擊失敗
-                    fail += 1
-                else:
-                    # 辨識結果失敗 攻擊成功
-                    success += 1
+                # if final_pred.item() == target.item():
+                    # # 辨識結果還是正確 攻擊失敗
+                    # fail += 1
+                # else:
+                    # # 辨識結果失敗 攻擊成功
+                    # success += 1
             # 將圖片存入
             adv_ex = perturbed_data * torch.tensor(self.std, device=DEVICE).view(3, 1, 1) + torch.tensor(self.mean, device=DEVICE).view(3, 1, 1)
             adv_ex = adv_ex.squeeze().detach().cpu().numpy()
             np.clip(adv_ex, 0, 1, out=adv_ex)
-            data_raw = data_raw * torch.tensor(self.std, device=DEVICE).view(3, 1, 1) + torch.tensor(self.mean, device=DEVICE).view(3, 1, 1)
-            data_raw = data_raw.squeeze().detach().cpu().numpy()
-            adv_results.append( (init_pred.item(), final_pred.item(), data_raw, adv_ex) )
-        final_acc = (fail / (wrong + success + fail))
-        
-        print("Epsilon: {}\tTest Accuracy = {} / {} = {}".format(epsilon, fail, len(self.loader), final_acc))
-        return adv_results, final_acc
+            adv_results.append(adv_ex)
+        return adv_results
 
 
 # In[5]:
@@ -182,16 +178,16 @@ results = []
 
 # 進行攻擊 並存起正確率和攻擊成功的圖片
 for eps in epsilons:
-    res, acc = attacker.attack(eps)
-    accuracies.append(acc)
-    examples.append(res[:5])
+    res = attacker.attack(eps)
+    # accuracies.append(acc)
+    # examples.append(res[:5])
     results.append(res)
-    L_inf = 0
-    for img in res:
-        L_inf += np.linalg.norm((img[2] - img[3]).reshape(224 * 224 * 3), ord=np.inf)
-    L_inf /= 200
-    L_inf *= 255
-    print(f'L-inf = {L_inf}\n')
+    # L_inf = 0
+    # for img in res:
+        # L_inf += np.linalg.norm((img[2] - img[3]).reshape(224 * 224 * 3), ord=np.inf)
+    # L_inf /= 200
+    # L_inf *= 255
+    # print(f'L-inf = {L_inf}\n')
 
 
 # In[6]:
@@ -200,16 +196,17 @@ for eps in epsilons:
 # get_ipython().run_line_magic('matplotlib', 'inline')
 # 顯示圖片
 cnt = 0
-plt.figure(figsize=(30, 30))
+# plt.figure(figsize=(30, 30))
 for i in range(len(epsilons)):
     try:
-        p = sys.argv[1]
+        p = sys.argv[2]
         if p != '':
             os.makedirs(p, exist_ok=True)
     except:
         p = 'results'
+    print(p)
     for j, img in enumerate(results[i]):
-        img = img[3] * 255
+        img = img * 255
         img = img.astype('uint8')
         img = np.transpose(img, (1, 2, 0))
         img = Image.fromarray(img, 'RGB')
