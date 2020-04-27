@@ -87,7 +87,7 @@ class Attacker:
             self.normalize
         ])
         # 利用 Adverdataset 這個 class 讀取資料
-        self.dataset = Adverdataset('./data/images', label, transform)
+        self.dataset = Adverdataset(img_dir, label, transform)
         
         self.loader = torch.utils.data.DataLoader(
                 self.dataset,
@@ -156,12 +156,24 @@ class Attacker:
 
 
 # 讀入圖片相對應的 label
-df = pd.read_csv("./data/labels.csv")
+try:
+    p = os.path.join(sys.argv[1], 'labels.csv')
+except:
+    p = './data/labels.csv'
+df = pd.read_csv(p)
 df = df.loc[:, 'TrueLabel'].to_numpy()
-label_name = pd.read_csv("./data/categories.csv")
+try:
+    p = os.path.join(sys.argv[1], 'categories.csv')
+except:
+    p = './data/categories.csv'
+label_name = pd.read_csv(p)
 label_name = label_name.loc[:, 'CategoryName'].to_numpy()
 # new 一個 Attacker class
-attacker = Attacker('./data/images', df)
+try:
+    p = os.path.join(sys.argv[1], 'images')
+except:
+    p = './data/images'
+attacker = Attacker(p, df)
 # 要嘗試的 epsilon
 epsilons = [0.137]
 
@@ -185,41 +197,43 @@ for eps in epsilons:
 # In[6]:
 
 
-get_ipython().run_line_magic('matplotlib', 'inline')
+# get_ipython().run_line_magic('matplotlib', 'inline')
 # 顯示圖片
 cnt = 0
 plt.figure(figsize=(30, 30))
 for i in range(len(epsilons)):
     try:
-        os.mkdir(f'results/{epsilons[i]}')
-    except FileExistsError:
-        pass
+        p = sys.argv[1]
+        if p != '':
+            os.makedirs(p, exist_ok=True)
+    except:
+        p = 'results'
     for j, img in enumerate(results[i]):
         img = img[3] * 255
         img = img.astype('uint8')
         img = np.transpose(img, (1, 2, 0))
         img = Image.fromarray(img, 'RGB')
-        img.save(f'results/{epsilons[i]}/%03d.png' % j)
+        img.save(os.path.join(p, '%03d.png' % j))
 
-    for j in range(len(examples[i])):
-        cnt += 1
-        plt.subplot(len(epsilons),len(examples[0]) * 2,cnt)
-        plt.xticks([], [])
-        plt.yticks([], [])
-        if j == 0:
-            plt.ylabel("Eps: {}".format(epsilons[i]), fontsize=14)
-        orig, adv, orig_img, ex = examples[i][j]
-        # plt.title("{} -> {}".format(orig, adv))
-        plt.title("original: {}".format(label_name[orig].split(',')[0]))
-        orig_img = np.transpose(orig_img, (1, 2, 0))
-        plt.imshow(orig_img)
-        cnt += 1
-        plt.subplot(len(epsilons),len(examples[0]) * 2,cnt)
-        plt.title("adversarial: {}".format(label_name[adv].split(',')[0]))
-        ex = np.transpose(ex, (1, 2, 0))
-        plt.imshow(ex)
-plt.tight_layout()
-plt.show()
+    # for j in range(len(examples[i])):
+        # cnt += 1
+        # plt.subplot(len(epsilons),len(examples[0]) * 2,cnt)
+        # plt.xticks([], [])
+        # plt.yticks([], [])
+        # if j == 0:
+            # plt.ylabel("Eps: {}".format(epsilons[i]), fontsize=14)
+        # orig, adv, orig_img, ex = examples[i][j]
+        # # plt.title("{} -> {}".format(orig, adv))
+        # plt.title("original: {}".format(label_name[orig].split(',')[0]))
+        # orig_img = np.transpose(orig_img, (1, 2, 0))
+        # plt.imshow(orig_img)
+        # cnt += 1
+        # plt.subplot(len(epsilons),len(examples[0]) * 2,cnt)
+        # plt.title("adversarial: {}".format(label_name[adv].split(',')[0]))
+        # ex = np.transpose(ex, (1, 2, 0))
+        # plt.imshow(ex)
+# plt.tight_layout()
+# plt.show()
 
 
 # In[7]:
