@@ -1,0 +1,83 @@
+\documentclass[a4paper,11pt]{article}
+\usepackage[left=1.8cm, right=1.8cm, top=2cm, bottom=2cm]{geometry}
+\usepackage{xeCJK}
+\usepackage{indentfirst}
+\usepackage{tabularx}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{listings}
+\usepackage{verbatim}
+\usepackage{fancyhdr}
+% \usepackage[compact]{titlesec}
+\usepackage[usenames,dvipsnames]{xcolor}
+
+\setCJKmainfont{NotoSansCJKtc-Thin}
+\setmonofont{Consolas}
+
+\definecolor{CodeGreen}{rgb}{0,0.6,0}
+\definecolor{CodeGray}{rgb}{0.5,0.5,0.5}
+\definecolor{CodeMauve}{rgb}{0.58,0,0.82}
+\lstset{
+    basicstyle = \ttfamily\footnotesize, 
+    breakatwhitespace = false,
+    breaklines = true,         
+    commentstyle = \color{CodeGreen}\bfseries,
+    extendedchars = false,
+    keepspaces=true,
+    keywordstyle=\color{blue}\bfseries, % keyword style
+    language = C++,                     % the language of code
+    otherkeywords={string},
+    numbers=left,
+    numbersep=5pt,
+    numberstyle=\tiny\color{CodeGray},
+    rulecolor=\color{black},
+    showspaces=false,
+    showstringspaces=false,
+    showtabs=false,
+    stepnumber=1,       
+    stringstyle=\color{CodeMauve},        % string literal style
+    tabsize=2,
+}
+% from https://blog.csdn.net/RobertChenGuangzhi/article/details/45126785
+
+\title{Machine Learning 2020 - Homework 6 Report}
+\author{學號：b08902100, 系級：資工一, 姓名：江昱勳}
+\date{}
+
+\begin{document}
+\pagestyle{fancy}
+\fancyhead[L]{Machine Learning 2020 - Homework 6}
+\fancyhead[R]{Author: b08902100 江昱勳}
+
+\maketitle
+
+% \verbatiminput{HW2_S.txt}
+% \lstinputlisting{HW2.cpp}
+
+\begin{enumerate}
+
+\item 試說明 hw6\_best.sh 攻擊的方法，包括使用的 proxy model、方法、參數等。此方法和 FGSM 的差異為何？如何影響你的結果？請完整討論。
+
+我採用的攻擊方法是將FGSM稍作修改，執行多次的FGSM，並且加入momentum的參數，讓我們在維持一定的EPS下也能慢慢找出最佳的噪音。而實際上我讓我的程式對於一張圖最多執行50次的FGSM，而若是有先發現已成功攻擊，則會停下來，不繼續執行FGSM；EPS的部份我則是選擇0.02，實際測量過0.01的時候會無法將全部的圖片都成功攻擊，因此我EPS選擇0.02。momentum的參數我則覺得差異不大，有嘗試過設置成0.6也能在差不多的EPS下成功攻擊圖片，而我最後選擇設製成0.8。proxy model的部份稍微實驗過後我採用PyTorch內建的densenet121，理由如第二題。
+
+\item 請嘗試不同的 proxy model，依照你的實作的結果來看，背後的 black box 最有可能為哪一個模型？請說明你的觀察和理由。
+
+我認為背後的 black box model 最有可能是PyTorch內建的densenet121，因為我有嘗試將我的proxy model設置成其他的model，在相同的條件下，成功率都會大幅下降。此外，嘗試將一份稍作攻擊過後的圖片傳至 Judge 上後，可以觀察到densenet121的accuracy與 Judge 上的success rate最為相近，故可以推測背後的model為densenet121。
+
+\item 請以 hw6\_best.sh 的方法，visualize 任意三張圖片攻擊前後的機率圖 (分別取前三高的機率)。
+
+\includegraphics[width=\textwidth]{../plot/123.pdf}
+\includegraphics[width=\textwidth]{../plot/124.pdf}
+\includegraphics[width=\textwidth]{../plot/125.pdf}
+
+\item 請將你產生出來的 adversarial img，以任一種 smoothing 的方式實作被動防禦 (passive defense)，觀察是否有效降低模型的誤判的比例。請說明你的方法，附上你防禦前後的 success rate，並簡要說明你的觀察。另外也請討論此防禦對原始圖片會有什麼影響。
+
+這裡以PyTorch內建的densenet121做測試，使用$2\times 2$的高斯模糊。在未加入高斯模糊前，原始圖片正確率為0.925，被攻擊的圖片正確率則為0。而加入高斯模糊後，原始圖片的正確率降至0.595，但被攻擊的圖片正確率則升回0.52，可以發現兩者差異不大，但是準確率的確被減少了許多。以下附上與第3題相同，但是高斯模糊後的結果。
+
+\includegraphics[width=\textwidth]{../plot/gauss-123.pdf}
+\includegraphics[width=\textwidth]{../plot/gauss-124.pdf}
+\includegraphics[width=\textwidth]{../plot/gauss-125.pdf}
+
+\end{enumerate}
+
+\end{document}
